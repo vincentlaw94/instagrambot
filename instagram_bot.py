@@ -1,7 +1,12 @@
 from selenium import webdriver
+from selenium.webdriver.support import ui
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import os
 import time
 from utility_methods.utility_methods import *
+import re
 import random
 
 class InstagramBot:
@@ -18,7 +23,7 @@ class InstagramBot:
         self.login_url =config['IG_URLS']['LOGIN']
         self.nav_user_url = config['IG_URLS']['NAV_USER']
         self.get_tag_url = config['IG_URLS']['SEARCH_TAGS']
-        self.post_url = config['IG_URLS']['POST_LINK']
+
 
         self.log_in = False
         self.following=[]
@@ -39,6 +44,43 @@ class InstagramBot:
 
         login_btn = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/article/div/div[1]/div/form/div[4]/button')
         login_btn.click()
+
+    def contest_entry(self,post_url):
+        self.driver.get(post_url)
+        #parse description and find all username handle to follow
+        description = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div/li/div/div/div[2]/span')
+        regrex = re.compile(r'@([A-Za-z0-9_]+)')
+        contest_follows = list(set(regrex.findall(description.text)))
+
+        #select comment text area
+        commentSection = ui.WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.Ypffh")))
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", commentSection)
+
+        #post mention following users
+        for user in self.following:
+            if user == '':
+                continue
+            try:
+                commentSection = ui.WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.Ypffh")))
+
+                commentSection.send_keys('@'+user)
+                post_btn = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/article/div[2]/section[3]/div/form/button')
+                post_btn.click()
+                time.sleep(random.randint(3,4))
+            except Exception:
+                time.sleep(random.randint(3,4))
+
+
+        #like contest post
+        like_btn = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/article/div[2]/section[1]/span[1]/button/span')
+        like_btn.click()
+        #follow contest user
+        for user in contest_follows:
+            if user not in self.following:
+                self.driver.get(nav_user_url.format(user))
+                follow_btn = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/header/section/div[2]/div/span/span[1]/button')
+                follow_btn.click()
 
     def infinite_scroll(self, src=None):
             """
@@ -64,9 +106,10 @@ class InstagramBot:
     def get_following_list(self):
         #log in to accounts page
         self.driver.get(self.nav_user_url.format(self.username))
+        time.sleep(1)
         following_btn  = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/header/section/ul/li[3]/a')
         following_btn.click()
-
+        time.sleep(1)
         self.driver.find_element_by_xpath('/html/body/div[5]/div/div/div/div/div/div[3]/a').click()
         time.sleep(1)
         username_input = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/article/div/div[1]/div/form/div[2]/div/label/input')
@@ -79,7 +122,7 @@ class InstagramBot:
         login_btn.click()
 
         #get following list
-        time.sleep(2)
+        time.sleep(3)
         following_btn1 = self.driver.find_element_by_xpath('//*[@id="react-root"]/section/main/div/header/section/ul/li[3]')
         following_btn1.click()
         time.sleep(1)
@@ -97,7 +140,7 @@ class InstagramBot:
 
 
 
-        
+
 
 if __name__ == '__main__':
     config_file_path = './config.ini'
@@ -108,3 +151,4 @@ if __name__ == '__main__':
     bot = InstagramBot()
 
     bot.get_following_list()
+    bot.contest_entry('https://www.instagram.com/p/Bmj8Fbmjgly/')#https://www.instagram.com/p/B5J7rb4lqb0/
