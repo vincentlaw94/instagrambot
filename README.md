@@ -1,7 +1,7 @@
 # instagrambot
 
 ## Features
-- log in to instagram
+- Log into Instagram
 - Get users you're following 
-- navigate to users
+- Navigate to user's profiles
 - Automate contest post entries 
